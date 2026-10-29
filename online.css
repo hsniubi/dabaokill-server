@@ -1,0 +1,67 @@
+body { background: #14251f; }
+#online-app { min-height: 100vh; background: radial-gradient(ellipse at 50% -20%, #305645, #1b3028 52%, #14251f); }
+.online-shell { max-width: 1260px; margin: auto; padding: 0 24px 60px; }
+.online-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 88px; border-bottom: 1px solid var(--line); }
+.online-brand { color: var(--paper-light); text-decoration: none; font: 700 25px Georgia, serif; }
+.online-brand span { color: var(--gold-light); }
+.online-header small { color: var(--muted); font-size: 12px; }
+.online-header-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
+.online-header-actions a { text-decoration: none; }
+.online-entry { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 400px); gap: 36px; align-items: center; min-height: calc(100vh - 150px); }
+.online-entry-art { min-height: 530px; position: relative; overflow: hidden; border: 1px solid var(--line); background: #20382e; }
+.online-entry-art img { width: 100%; height: 100%; position: absolute; object-fit: cover; object-position: center 20%; filter: saturate(.8); }
+.online-entry-art::after { content: ""; position: absolute; inset: 50% 0 0; background: linear-gradient(transparent, rgba(12,28,21,.86)); }
+.online-entry-art strong { position: absolute; z-index: 1; left: 30px; bottom: 28px; font: 700 clamp(30px, 4vw, 52px) "Noto Serif SC", serif; }
+.online-card { padding: 28px; background: rgba(8, 24, 17, .72); border: 1px solid rgba(217, 189, 124, .42); }
+.online-card h1 { margin: 8px 0 13px; font-size: clamp(30px, 4vw, 46px); }
+.online-card p { color: #c9d6c8; line-height: 1.7; font-size: 14px; }
+.online-actions { display: grid; gap: 12px; margin-top: 24px; }
+.online-actions input { min-width: 0; width: 100%; padding: 10px; font: inherit; background: #12251c; color: var(--paper-light); border: 1px solid var(--line); }
+.online-primary, .online-secondary { width: 100%; min-height: 48px; padding: 11px 18px; border: 1px solid var(--gold-light); font-weight: 700; }
+.online-primary { color: #172721; background: var(--gold-light); }
+.online-primary:hover { background: #f1d998; }
+.online-secondary { color: var(--paper-light); background: transparent; }
+.online-secondary:hover { background: rgba(217,189,124,.12); }
+.online-join { display: flex; gap: 8px; }
+.online-join input, .online-copy-row input { min-width: 0; width: 100%; min-height: 47px; padding: 10px 12px; border: 1px solid rgba(217,189,124,.5); color: var(--paper-light); background: #12251c; font: inherit; }
+.online-join input { text-transform: uppercase; letter-spacing: .22em; font-weight: 700; }
+.online-join button { width: 105px; flex: none; }
+.online-note, .online-error { margin-top: 14px; font-size: 13px; line-height: 1.5; }
+.online-note { color: #b8c7b9; }
+.online-error { color: #ffbba9; }
+.online-room-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 32px 0 20px; }
+.online-room-head h1 { margin: 4px 0; font-size: clamp(28px, 4vw, 44px); }
+.online-room-head > div:last-child { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; justify-content: flex-end; }
+.online-room-head .online-secondary { width: auto; min-height: 36px; padding: 7px 11px; font-size: 12px; }
+.online-pill { display: inline-block; padding: 8px 12px; border: 1px solid var(--line); color: var(--gold-light); font-size: 13px; }
+.online-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.online-seat { min-width: 0; padding: 16px; border: 1px solid var(--line); background: rgba(8,24,17,.55); }
+.online-seat.is-self { border-color: var(--gold-light); background: rgba(52,81,57,.55); }
+.online-seat.is-empty { opacity: .55; }
+.online-seat h2 { margin: 0 0 6px; font-size: 20px; }
+.online-seat small { color: var(--muted); }
+.online-seat-score { margin: 10px 0; color: var(--gold-light); font: 700 26px Georgia, serif; }
+.online-seat-score span { font: 12px "Noto Sans SC", sans-serif; }
+.online-display, .online-boss-cards, .online-hand, .online-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.online-card-mini { width: 76px; text-align: center; }
+.online-card-mini img { width: 76px; height: 96px; object-fit: cover; object-position: top; border: 1px solid rgba(217,189,124,.5); }
+.online-card-mini span { display: block; margin-top: 4px; font-size: 12px; }
+.online-boss, .online-controls, .online-history, .online-wait { margin-top: 18px; padding: 22px; border: 1px solid var(--line); background: rgba(8,24,17,.55); }
+.online-boss h2, .online-controls h2, .online-history h2 { font-size: 24px; }
+.online-boss-cards { align-items: center; min-height: 55px; }
+.online-control-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 380px); gap: 25px; }
+.online-control-grid p { color: #c4d1c1; line-height: 1.6; }
+.online-hand button, .online-options button { width: 105px; padding: 7px; color: var(--paper-light); background: #1d3a2b; border: 1px solid var(--line); }
+.online-hand button:hover, .online-options button:hover { border-color: var(--gold-light); }
+.online-hand button img, .online-options button img { width: 100%; height: 128px; object-fit: cover; object-position: top; }
+.online-hand button strong, .online-options button strong { display: block; margin: 6px 0 3px; }
+.online-hand button small, .online-options button small { color: var(--gold-light); }
+.online-history ol { margin: 0; padding-left: 22px; color: #c8d5c8; line-height: 1.8; }
+.online-copy-row { display: flex; gap: 8px; margin-top: 18px; }
+.online-copy-row button { width: 110px; flex: none; }
+.online-status { color: var(--gold-light); font-weight: 700; }
+.online-result { padding: 18px; border: 1px solid var(--gold-light); background: rgba(174,138,73,.13); }
+.online-result strong { color: var(--gold-light); font-size: 22px; }
+.online-hint { color: var(--muted); font-size: 12px; line-height: 1.6; }
+@media (max-width: 900px) { .online-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .online-entry { grid-template-columns: 1fr; gap: 0; } .online-entry-art { min-height: 230px; } .online-entry-art img { object-position: center 27%; } .online-control-grid { grid-template-columns: 1fr; } }
+@media (max-width: 540px) { .online-shell { padding: 0 14px 36px; } .online-header { min-height: 68px; } .online-entry-art { min-height: 180px; } .online-card { padding: 22px; } .online-room-head { align-items: flex-start; } .online-grid { gap: 8px; } .online-seat { padding: 11px; } .online-card-mini, .online-card-mini img { width: 55px; } .online-card-mini img { height: 72px; } .online-seat h2 { font-size: 16px; } .online-boss, .online-controls, .online-history, .online-wait { padding: 15px; } }

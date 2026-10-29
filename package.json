@@ -1,0 +1,13 @@
+{
+  "name": "dabaokill",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DabaoKill four-player online room server",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node online-server.js",
+    "test:online": "node test-online.js"
+  }
+}

@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: dabaokill-rooms
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: node --check online-server.js
+    startCommand: node online-server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: HOST
+        value: 0.0.0.0
