@@ -27,6 +27,17 @@
   let busy = false;
   let polling = false;
   let error = "";
+  const scenes = window.DabaoOnlineScenes ? new window.DabaoOnlineScenes.OnlineScenes({
+    sound, host: document.getElementById("online-scenes"), app,
+    onChange: () => render(), onMute: () => toggleSound(), onNewRoom: () => createOrJoin(null),
+  }) : null;
+
+  function toggleSound() {
+    sound.setMuted(!sound.muted);
+    try { localStorage.setItem("dabaokill-online-muted", String(sound.muted)); } catch { /* Optional persistence. */ }
+    if (!sound.muted) startRoomAudio();
+    render();
+  }
 
   function escapeHtml(value) {
     return String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
@@ -108,8 +119,11 @@
 
   function render() {
     if (state) {
-      if (state.phase === "ended") { if (!busy) sound.stop(); }
-      else startRoomAudio();
+      scenes?.sync(state);
+      if (!scenes?.active) {
+        if (state.phase === "ended") { if (!busy) sound.stop(); }
+        else startRoomAudio();
+      }
       renderRoom();
     } else renderEntry();
   }
@@ -174,7 +188,7 @@
   }
 
   async function act(type, id) {
-    if (busy || !session) return;
+    if (busy || !session || scenes?.active) return;
     startRoomAudio();
     const activeSession = session;
     busy = true;
@@ -196,14 +210,12 @@
     if (button?.dataset.action !== "mute") sound.ensureBackground();
     if (!button) return;
     if (button.dataset.action === "mute") {
-      sound.setMuted(!sound.muted);
-      try { localStorage.setItem("dabaokill-online-muted", String(sound.muted)); } catch { /* Optional persistence. */ }
-      if (!sound.muted) startRoomAudio();
-      render();
+      toggleSound();
     }
     else if (button.dataset.action === "create") createOrJoin(null);
     else if (button.dataset.action === "start-ai") act("start");
     else if (button.dataset.action === "switch-room") {
+      scenes?.reset();
       sound.stop();
       session = null;
       state = null;
@@ -229,6 +241,7 @@
         apiBase = serviceOrigin(new FormData(event.target).get("service").trim());
         try { localStorage.setItem("dabaokill-service", apiBase); } catch { /* Optional persistence. */ }
         session = null; state = null; error = "服务地址已保存，可以创建或加入房间。";
+        scenes?.reset();
         sound.stop();
       } catch (failure) { error = failure.message; }
       render(); return;

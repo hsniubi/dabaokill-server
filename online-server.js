@@ -12,6 +12,7 @@ const ROOM_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const PUBLIC_FILES = new Set(["index.html", "online.html", "style.css", "online.css", "game.js", "online.js", "app.js", "asset-loader.js", "audio.js", "result-scene.js", "kill-scene.js", "boss-flip-scene.js", "player-flip-scene.js", "skill-scene.js", "card-effect-scene.js"]);
 const ASSET_DIRS = new Set(["picture", "voice", "video"]);
 PUBLIC_FILES.add("online-config.js");
+PUBLIC_FILES.add("online-scenes.js");
 const MIME = {
   ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8", ".jpg": "image/jpeg",
@@ -23,13 +24,52 @@ function codeForRoom() {
   return Array.from({ length: 6 }, () => ROOM_ALPHABET[crypto.randomInt(ROOM_ALPHABET.length)]).join("");
 }
 
+// The journal contains only already-public actions, never hands or deck order.
+function presentationGame(random, humans = 4) {
+  const game = new Game("online", random, humans);
+  game.events = [];
+  game.emitScene = (type, data = {}) => game.events.push({ id: game.events.length + 1, round: game.round, type, ...JSON.parse(JSON.stringify(data)) });
+  let lastRecast, lastEffect;
+  const effects = () => {
+    if (game.recastEvent && game.recastEvent !== lastRecast) {
+      lastRecast = game.recastEvent; game.emitScene("recast", { data: lastRecast });
+    }
+    if (game.cardEffectEvent && game.cardEffectEvent !== lastEffect) {
+      lastEffect = game.cardEffectEvent; game.emitScene("effect", { data: lastEffect });
+    }
+  };
+  for (const method of ["reveal", "resolveNext", "choose", "bossStage"]) {
+    const original = game[method].bind(game);
+    game[method] = (...args) => {
+      if (method === "resolveNext" && game.phase === "resolve" && game.resolutionQueue.length) {
+        const { key, ownerId } = game.resolutionQueue[0];
+        game.emitScene("skill", { entry: { key, ownerId } });
+      }
+      const previousBoss = new Set(game.bossDisplay.map(card => card.id));
+      const accepted = original(...args);
+      if (accepted && method === "reveal") game.emitScene("reveal", { cards: game.revealedThisRound });
+      if (accepted && method === "bossStage") game.emitScene("boss", { cards: game.bossDisplay.filter(card => !previousBoss.has(card.id)), remaining: game.bossDeck.length });
+      effects();
+      return accepted;
+    };
+  }
+  return game;
+}
+
+function recordResult(game) {
+  if (game.events && game.phase === "ended" && !game.events.some(event => event.type === "result")) {
+    if (game.result.kind === "boss") game.emitScene("kill");
+    game.emitScene("result", { result: game.result, players: game.players.map(player => ({ id: player.id, score: game.score(player), pendingValue: game.pendingScore(player) })) });
+  }
+}
+
 function advanceGame(game) {
   for (let step = 0; step < 16; step += 1) {
     if (game.phase === "ready-reveal") game.reveal();
     else if (game.phase === "resolve") game.resolveNext();
     else if (game.phase === "ready-boss") game.bossStage();
     else if (game.phase === "ready-next") game.startRound();
-    else return;
+    else { recordResult(game); return; }
   }
   throw new Error("对局自动结算超过预期步数");
 }
@@ -42,6 +82,7 @@ function publicState(room, seat) {
     seats: room.seats.map((entry) => entry.id),
     version: room.version,
     status: game ? "playing" : "waiting",
+    events: game?.events || [],
     ...(game ? {
       round: game.round,
       phase: game.phase,
@@ -89,7 +130,7 @@ function createRoomStore(random = () => crypto.randomInt(0x100000000) / 0x100000
     const seat = { id: room.seats.length + 1, token: crypto.randomBytes(24).toString("hex") };
     room.seats.push(seat);
     if (room.seats.length === 4) {
-      room.game = new Game("online", random);
+      room.game = presentationGame(random);
       advanceGame(room.game);
     }
     room.version += 1;
@@ -116,7 +157,7 @@ function createRoomStore(random = () => crypto.randomInt(0x100000000) / 0x100000
       const seat = authenticate(room, token);
       const game = room.game;
       if (!game && action?.type === "start" && action.fillAI === true && seat.id === 1 && room.seats.length >= 2) {
-        room.game = new Game("online", random, room.seats.length);
+        room.game = presentationGame(random, room.seats.length);
         advanceGame(room.game);
         room.version += 1;
         return publicState(room, seat);
