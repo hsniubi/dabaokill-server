@@ -1,4 +1,7 @@
 body { background: #14251f; }
+#online-scenes[data-scene-paused] *, #online-scenes[data-scene-paused] *::before, #online-scenes[data-scene-paused] *::after { animation-play-state: paused !important; }
+.online-scene-loading { position: fixed; inset: 0; z-index: 200; display: grid; place-content: center; justify-items: center; gap: 18px; background: #14251f; color: #ead6a3; text-align: center; }
+.online-scene-loading button { padding: 12px 24px; border: 1px solid #ead6a3; background: transparent; color: inherit; }
 #online-app { min-height: 100vh; background: radial-gradient(ellipse at 50% -20%, #305645, #1b3028 52%, #14251f); }
 .online-shell { max-width: 1260px; margin: auto; padding: 0 24px 60px; }
 .online-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 88px; border-bottom: 1px solid var(--line); }

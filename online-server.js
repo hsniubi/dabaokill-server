@@ -198,7 +198,7 @@ async function bodyOf(request) {
   catch { throw Object.assign(new Error("请求格式错误"), { status: 400 }); }
 }
 
-async function serveFile(response, pathname) {
+async function serveFile(response, pathname, range) {
   const relative = pathname === "/" ? "index.html" : decodeURIComponent(pathname).replace(/^\/+/, "");
   if (relative.includes("\\") || relative.includes(":")) {
     json(response, 404, { error: "文件不存在" });
@@ -217,8 +217,23 @@ async function serveFile(response, pathname) {
   try {
     const stat = await fs.promises.stat(file);
     if (!stat.isFile()) throw new Error("Not a file");
-    response.writeHead(200, { "Content-Type": MIME[path.extname(file).toLowerCase()] || "application/octet-stream", "X-Content-Type-Options": "nosniff" });
-    fs.createReadStream(file).pipe(response);
+    const headers = { "Content-Type": MIME[path.extname(file).toLowerCase()] || "application/octet-stream", "X-Content-Type-Options": "nosniff", "Content-Length": stat.size,
+      "Cache-Control": ASSET_DIRS.has(parts[0]) ? "public, max-age=3600" : "no-cache", "Accept-Ranges": "bytes" };
+    if (range) {
+      const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+      let start = match?.[1] ? Number(match[1]) : 0;
+      let end = match?.[2] ? Number(match[2]) : stat.size - 1;
+      if (match && !match[1] && match[2]) { start = Math.max(0, stat.size - Number(match[2])); end = stat.size - 1; }
+      end = Math.min(end, stat.size - 1);
+      if (!match || (!match[1] && !match[2]) || !Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || start > end || start >= stat.size) {
+        response.writeHead(416, { "Content-Range": `bytes */${stat.size}` }); response.end(); return;
+      }
+      response.writeHead(206, { ...headers, "Content-Length": end-start+1, "Content-Range": `bytes ${start}-${end}/${stat.size}` });
+      fs.createReadStream(file, { start, end }).pipe(response);
+    } else {
+      response.writeHead(200, headers);
+      fs.createReadStream(file).pipe(response);
+    }
   } catch { json(response, 404, { error: "文件不存在" }); }
 }
 
@@ -246,7 +261,7 @@ function createServer(store = createRoomStore()) {
       } else if (match && request.method === "POST" && match[2] === "action") {
         json(response, 200, store.act(match[1], request.headers["x-room-token"], await bodyOf(request)));
       } else if (request.method === "GET" && !url.pathname.startsWith("/api/")) {
-        await serveFile(response, url.pathname);
+        await serveFile(response, url.pathname, request.headers.range);
       } else json(response, 404, { error: "接口不存在" });
     } catch (error) {
       if (!response.headersSent) json(response, error.status || 500, { error: error.status ? error.message : "服务器处理失败" });
