@@ -6,6 +6,13 @@
   const openedAsFile = location.protocol === "file:";
   const config = window.DabaoOnlineConfig || {};
   function readStorage(key) { try { return localStorage.getItem(key); } catch { return null; } }
+  const sound = new window.DabaoAudio.GameAudio();
+  sound.setMuted(readStorage("dabaokill-online-muted") === "true");
+  function startRoomAudio() {
+    if (state?.phase === "ended") return;
+    if (!sound.inGame) sound.start();
+    else sound.ensureBackground();
+  }
   function serviceOrigin(value) {
     const url = new URL(value);
     if (!["https:", "http:"].includes(url.protocol) || url.username || url.password || url.search || url.hash || url.pathname !== "/") throw new Error("请输入完整服务地址，如 https://你的服务.onrender.com，不要附带页面路径");
@@ -30,7 +37,7 @@
   }
 
   function shell(content) {
-    app.innerHTML = `<div class="online-shell"><header class="online-header"><a class="online-brand" href="index.html">DABAO<span>KILL</span></a><div class="online-header-actions"><small>在线四人 · 独立设备</small><a class="quiet-button" href="index.html">返回模式选择</a></div></header>${content}</div>`;
+    app.innerHTML = `<div class="online-shell"><header class="online-header"><a class="online-brand" href="index.html">DABAO<span>KILL</span></a><div class="online-header-actions"><small>在线四人 · 独立设备</small><button class="quiet-button" data-action="mute" aria-pressed="${sound.muted}" aria-label="静音">${sound.muted ? "开启音乐" : "静音"}</button><a class="quiet-button" href="index.html">返回模式选择</a></div></header>${content}</div>`;
   }
 
   function renderEntry() {
@@ -99,7 +106,13 @@
         <section class="online-history"><h2>战报</h2><ol>${state.log.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ol></section></div>`);
   }
 
-  function render() { if (state) renderRoom(); else renderEntry(); }
+  function render() {
+    if (state) {
+      if (state.phase === "ended") { if (!busy) sound.stop(); }
+      else startRoomAudio();
+      renderRoom();
+    } else renderEntry();
+  }
 
   async function api(method, url, payload, token) {
     const response = await fetch(new URL(url, serviceOrigin(apiBase)).href, {
@@ -126,6 +139,10 @@
 
   async function createOrJoin(code) {
     if (busy) return;
+    // Start inside the user's click/submit, before waiting for the network.
+    // A room restored after a refresh can retry on the next user interaction.
+    if (state?.phase === "ended") sound.start();
+    else startRoomAudio();
     busy = true;
     error = "";
     render();
@@ -133,7 +150,7 @@
       const data = code ? await api("POST", `/api/rooms/${code}/join`, {}) : await api("POST", "/api/rooms", {});
       saveSession(data.state.code, data.token);
       state = data.state;
-    } catch (failure) { error = failure.message; }
+    } catch (failure) { error = failure.message; if (!state) sound.stop(); }
     busy = false;
     render();
   }
@@ -158,6 +175,7 @@
 
   async function act(type, id) {
     if (busy || !session) return;
+    startRoomAudio();
     const activeSession = session;
     busy = true;
     error = "";
@@ -175,10 +193,18 @@
 
   app.addEventListener("click", (event) => {
     const button = event.target.closest("[data-action]");
+    if (button?.dataset.action !== "mute") sound.ensureBackground();
     if (!button) return;
-    if (button.dataset.action === "create") createOrJoin(null);
+    if (button.dataset.action === "mute") {
+      sound.setMuted(!sound.muted);
+      try { localStorage.setItem("dabaokill-online-muted", String(sound.muted)); } catch { /* Optional persistence. */ }
+      if (!sound.muted) startRoomAudio();
+      render();
+    }
+    else if (button.dataset.action === "create") createOrJoin(null);
     else if (button.dataset.action === "start-ai") act("start");
     else if (button.dataset.action === "switch-room") {
+      sound.stop();
       session = null;
       state = null;
       error = "";
@@ -203,6 +229,7 @@
         apiBase = serviceOrigin(new FormData(event.target).get("service").trim());
         try { localStorage.setItem("dabaokill-service", apiBase); } catch { /* Optional persistence. */ }
         session = null; state = null; error = "服务地址已保存，可以创建或加入房间。";
+        sound.stop();
       } catch (failure) { error = failure.message; }
       render(); return;
     }
